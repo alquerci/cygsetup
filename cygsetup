@@ -1,0 +1,112 @@
+#!/bin/bash
+
+SELF="$(basename "$0")";
+
+print_usage()
+{
+    echo "Package manager
+Usage: $SELF [OPTIONS] COMMAND
+    OPTIONS:
+        -R cygwin root directory
+
+    COMMANDS:
+        install  PACKAGE [PACKAGE...]  install PACKAGE
+        search   REGEXP                search package with a format regex
+        upgrade                        update all packages
+        check                          check package integrity
+        list                           show list installed packages
+        clean                          clean cache files
+        help                           this message
+" 1>&2;
+    exit 1;
+};
+
+if test -z "$1";
+then
+    print_usage;
+fi;
+
+cygroot=/;
+
+options="R:";
+
+set -- $(getopt -u -n "$SELF" -o "$options" -- $@);
+while true;
+do
+   case "$1" in
+       -R)
+           shift;
+           cygroot="$1"
+       ;;
+       --|*)
+           shift;
+           break;
+       ;;
+   esac;
+   shift;
+done;
+
+cmd="$1"
+shift
+barred="$@"
+
+exename=$SELF
+prefix=/usr
+sysconfdir=/etc
+libexecdir=/usr/lib
+localstatedir=/var
+datadir=/usr/share
+mandir=/usr/share/man
+infodir=/usr/share/info
+
+
+mirror_url="http://cygwin.xl-mirror.nl/";
+setup_url="http://cygwin.com/setup.exe";
+
+installdir="$(cygpath -aw '$cygroot')";
+localcache="$(cygpath -aw $localstatedir/cache/$exename)";
+
+mkdir -p $libexecdir/$exename
+if [ ! -f "$libexecdir/$exename/setup.exe" ];
+then
+    wget -O "$libexecdir/$exename/setup.exe" "$setup_url";
+    chmod u+x "$libexecdir/$exename/setup.exe";
+fi;
+
+case "$cmd" in
+    'help')
+        print_usage;
+    ;;
+    'install')
+        packages="";
+        for package in $barred;
+        do
+            packages="-P $package $packages";
+        done;
+        unset package;
+
+        $libexecdir/$exename/setup.exe -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" $packages > /dev/null
+    ;;
+    'search')
+        cygcheck -p $barred
+    ;;
+    'check')
+        cygcheck -c $barred
+    ;;
+    'list')
+        cygcheck -cd $barred
+    ;;
+    'upgrade')
+        $libexecdir/$exename/setup.exe -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" > /dev/null
+    ;;
+    'clean')
+        rm -r $libexecdir/$exename
+        rm -r $localstatedir/cache/$exename
+    ;;
+    *)
+        print_usage;
+    ;;
+esac;
+
+
+exit $?;
