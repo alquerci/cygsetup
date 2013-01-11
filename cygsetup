@@ -26,7 +26,7 @@ then
     print_usage;
 fi;
 
-cygroot=/;
+cygroot=
 
 options="R:";
 
@@ -50,23 +50,25 @@ cmd="$1"
 shift
 barred="$@"
 
+installdir="$(cygpath -aw \"$cygroot\")";
+cygroot="(cygpath -u \"$cygroot\")";
+
 exename=$SELF
-prefix=/usr
-sysconfdir=/etc
-libexecdir=/usr/lib
-localstatedir=/var
-datadir=/usr/share
-mandir=/usr/share/man
-infodir=/usr/share/info
+prefix=$cygroot/usr
+sysconfdir=$cygroot/etc
+libexecdir=$cygroot/usr/lib
+localstatedir=$cygroot/var
+datadir=$cygroot/usr/share
+mandir=$cygroot/usr/share/man
+infodir=$cygroot/usr/share/info
 
 
 mirror_url="http://cygwin.xl-mirror.nl/";
 setup_url="http://cygwin.com/setup.exe";
 
-installdir="$(cygpath -aw '$cygroot')";
 localcache="$(cygpath -aw $localstatedir/cache/$exename)";
 
-mkdir -p $libexecdir/$exename
+mkdir -p "$libexecdir/$exename"
 if [ ! -f "$libexecdir/$exename/setup.exe" ];
 then
     wget -O "$libexecdir/$exename/setup.exe" "$setup_url";
@@ -85,7 +87,7 @@ case "$cmd" in
         done;
         unset package;
 
-        $libexecdir/$exename/setup.exe -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" $packages > /dev/null
+        "$libexecdir/$exename/setup.exe" -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" $packages > /dev/null
     ;;
     'search')
         cygcheck -p $barred
@@ -97,11 +99,11 @@ case "$cmd" in
         cygcheck -cd $barred
     ;;
     'upgrade')
-        $libexecdir/$exename/setup.exe -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" > /dev/null
+        "$libexecdir/$exename/setup.exe" -qnNdO -R "$installdir" -s "$mirror_url" -l "$localcache" > /dev/null
     ;;
     'clean')
-        rm -r $libexecdir/$exename
-        rm -r $localstatedir/cache/$exename
+        rm -r "$libexecdir/$exename"
+        rm -r "$localstatedir/cache/$exename"
     ;;
     *)
         print_usage;
